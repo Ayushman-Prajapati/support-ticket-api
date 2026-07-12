@@ -20,21 +20,28 @@ def resolve_ticket(data: ResolveRequest, db: Session = Depends(get_db)):
         result = resolve_service.resolve(db, data.ticket_id, data.effort_logged)
         return ResolveResponse(**result)
     except ValueError as e:
-        if str(e) == "ticket_not_found":
+        error = e.args[0]
+
+        if error == "ticket_not_found":
             raise HTTPException(status_code=404, detail="Ticket not found")
-        if str(e) == "out_of_stock":
+
+        if error == "out_of_stock":
             raise HTTPException(
                 status_code=400,
                 detail=OutOfStockError().model_dump(),
             )
-        if str(e) == "insufficient_effort":
-            required, logged = e.args[1], e.args[2]
+
+        if error == "insufficient_effort":
+            required = e.args[1]
+            logged = e.args[2]
             raise HTTPException(
                 status_code=400,
                 detail=InsufficientEffortError(
-                    required=required, logged=logged
+                    required=required,
+                    logged=logged,
                 ).model_dump(),
             )
+
         raise
 
 
