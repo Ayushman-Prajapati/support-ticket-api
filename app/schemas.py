@@ -1,9 +1,12 @@
-from pydantic import BaseModel, Field
-
+from typing import Annotated
+from pydantic import StringConstraints, BaseModel, Field
 
 # --- Queue ---
 class QueueCreate(BaseModel):
-    name: str
+    name: Annotated[
+        str,
+        StringConstraints(strip_whitespace=True, min_length=1)
+    ]
     capacity: int = Field(..., gt=0)
 
 
