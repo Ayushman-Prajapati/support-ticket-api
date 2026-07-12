@@ -82,10 +82,33 @@ def remove_ticket_from_queue(
         ticket_service.remove_ticket_quantity(db, queue_id, ticket_id, quantity)
         return MessageResponse(message="Ticket(s) removed successfully")
     except ValueError as e:
-        if str(e) == "queue_not_found":
+        error = e.args[0]
+
+        if error == "queue_not_found":
             _queue_404()
-        if str(e) == "ticket_not_found":
+
+        if error == "ticket_not_found":
             _ticket_404()
+
+        if error == "invalid_quantity":
+            raise HTTPException(
+                status_code=400,
+                detail="Quantity must be greater than zero",
+            )
+
+        if error == "quantity_exceeded":
+            available = e.args[1]
+            requested = e.args[2]
+
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "Requested quantity exceeds available quantity",
+                    "available": available,
+                    "requested": requested,
+                },
+            )
+
         raise
 
 

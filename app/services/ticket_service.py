@@ -127,18 +127,42 @@ def remove_ticket_quantity(
     queue = db.query(Queue).filter(Queue.id == queue_id).first()
     if not queue:
         raise ValueError("queue_not_found")
-    ticket = db.query(Ticket).filter(Ticket.id == ticket_id, Ticket.queue_id == queue_id).first()
+
+    ticket = (
+        db.query(Ticket)
+        .filter(
+            Ticket.id == ticket_id,
+            Ticket.queue_id == queue_id,
+        )
+        .first()
+    )
+
     if not ticket:
         raise ValueError("ticket_not_found")
+
     if quantity is not None:
-        to_remove = min(quantity, ticket.quantity)
-        ticket.quantity -= to_remove
-        queue.current_ticket_count -= to_remove
-        if ticket.quantity <= 0:
+
+        if quantity <= 0:
+            raise ValueError("invalid_quantity")
+
+        # NEW VALIDATION
+        if quantity > ticket.quantity:
+            raise ValueError(
+                "quantity_exceeded",
+                ticket.quantity,
+                quantity,
+            )
+
+        ticket.quantity -= quantity
+        queue.current_ticket_count -= quantity
+
+        if ticket.quantity == 0:
             db.delete(ticket)
+
     else:
         queue.current_ticket_count -= ticket.quantity
         db.delete(ticket)
+
     db.commit()
 
 
